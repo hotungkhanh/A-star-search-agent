@@ -40,7 +40,7 @@ def search(
     # search algorithm. Remember: if no solution is possible for a given input,
     # return `None` instead of a list.
     return [
-        PlaceAction(Coord(2, 5), Coord(2, 6), Coord(3, 6), Coord(3, 8)),
+        PlaceAction(Coord(2, 5), Coord(2, 6), Coord(3, 6), Coord(3, 7)),
         PlaceAction(Coord(1, 8), Coord(2, 8), Coord(3, 8), Coord(4, 8)),
         PlaceAction(Coord(5, 8), Coord(6, 8), Coord(7, 8), Coord(8, 8)),
     ]
