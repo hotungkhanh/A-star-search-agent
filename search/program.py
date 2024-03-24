@@ -28,7 +28,7 @@ def search(
     # The render_board() function is handy for debugging. It will print out a
     # board state in a human-readable format. If your terminal supports ANSI
     # codes, set the `ansi` flag to True to print a colour-coded version!
-    print(render_board(board, target, ansi=False))
+    print(render_board(board, target, ansi=True))
 
     # Do some impressive AI stuff here to find the solution...
     # ...
