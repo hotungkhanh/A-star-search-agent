@@ -43,7 +43,7 @@ def parse_input(input: str) -> tuple[dict[Coord, PlayerColor], Coord]:
         exit(1)
 
 
-def print_result(sequence: list[PlaceAction] | None):
+def print_result(sequence: list[Coord] | None):
     """
     Print the given action sequence, one action per line, or "NOT_FOUND" if no
     sequence was found.
@@ -60,7 +60,7 @@ def main():
     Main entry point for program.
     """
     input = parse_input(stdin.read())
-    sequence: list[PlaceAction] | None = search(*input)
+    sequence: list[Coord] | None = search(*input)
     print_result(sequence)
 
 
