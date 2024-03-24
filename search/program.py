@@ -5,10 +5,81 @@ from .core import PlayerColor, Coord, PlaceAction
 from .utils import render_board
 
 
+# returns the minimum cost in a vector( if
+# there are multiple goal states)
+def uniform_cost_search(board: dict[Coord, PlayerColor], target: Coord):
+     
+    # minimum cost upto
+    # goal state from starting
+    answer = 10**8
+ 
+    # create a priority queue
+    queue = []
+ 
+    # insert the starting indices
+    for coord in board:
+        if board[coord] == PlayerColor.RED:
+            queue.append([0, coord])
+ 
+    # map to store visited node
+    visited = {}
+ 
+    # count
+    count = 0
+ 
+    # while the queue is not empty
+    while (len(queue) > 0):
+ 
+        # get the top element of the
+        queue = sorted(queue)
+        p = queue[-1]
+ 
+        # pop the element
+        del queue[-1]
+ 
+        # get the original value
+        p[0] *= -1
+ 
+        # check if the element is part of
+        # the goal list
+        if (p[1] == target):
+ 
+            # get the position
+            index = target.index(p[1])
+ 
+            # if a new goal is reached
+            if answer == 10**8:
+                count += 1
+ 
+            # if the cost is less
+            if (answer > p[0]):
+                answer = p[0]
+ 
+            # pop the element
+            del queue[-1]
+ 
+            queue = sorted(queue)
+            if (count == len(goal)):
+                return answer
+ 
+        # check for the non visited nodes
+        # which are adjacent to present node
+        if (p[1] not in visited):
+            for i in range(len(graph[p[1]])):
+ 
+                # value is multiplied by -1 so that
+                # least priority is at the top
+                queue.append( [(p[0] + cost[(p[1], graph[p[1]][i])])* -1, graph[p[1]][i]])
+ 
+        # mark as visited
+        visited[p[1]] = 1
+ 
+    return answer
+
 def search(
     board: dict[Coord, PlayerColor], 
     target: Coord
-) -> list[PlaceAction] | None:
+):
     """
     This is the entry point for your submission. You should modify this
     function to solve the search problem discussed in the Part A specification.
@@ -30,17 +101,4 @@ def search(
     # codes, set the `ansi` flag to True to print a colour-coded version!
     print(render_board(board, target, ansi=True))
 
-    # Do some impressive AI stuff here to find the solution...
-    # ...
-    # ... (your solution goes here!)
-    # ...
-
-    # Here we're returning "hardcoded" actions as an example of the expected
-    # output format. Of course, you should instead return the result of your
-    # search algorithm. Remember: if no solution is possible for a given input,
-    # return `None` instead of a list.
-    return [
-        PlaceAction(Coord(2, 5), Coord(2, 6), Coord(3, 6), Coord(3, 7)),
-        PlaceAction(Coord(1, 8), Coord(2, 8), Coord(3, 8), Coord(4, 8)),
-        PlaceAction(Coord(5, 8), Coord(6, 8), Coord(7, 8), Coord(8, 8)),
-    ]
+    return uniform_cost_search(board, target)
