@@ -70,23 +70,29 @@ class Node():
         return f"Coord: {self.position}   f={self.f}"
 
 
-def smaller_rc(p1: Coord, p2: Coord):
-    # needs fixing
-    rdiff = abs(p1.r - p2.r)
-    if rdiff > (11//2):
-        rdiff = 11 - rdiff
-    
-    cdiff = abs(p1.c - p2.c)
-    if cdiff > (11//2):
-        cdiff = 11 - cdiff
-    # print(Coord(rdiff, cdiff))
-    return Coord(rdiff, cdiff)
+def manhattan_dist(p1: Coord, p2: Coord):
+    '''
+    Finds shortest manhatten distance between two Coords
+    Takes into account the torus nature of board
+    '''
+    rdiff = min(abs(p1.r - p2.r), 10 - abs(p1.r - p2.r))
+    cdiff = min(abs(p1.c - p2.c), 10 - abs(p1.c - p2.c))
+
+    return rdiff**2 + cdiff**2
     
 
 
 def astar(board, target):
-    # get targets
-    # targets = adjacent(target)
+    # get targets to fill
+    row_to_fill = []
+    col_to_fill = []
+    for i in range(11):
+        row_square = Coord(target.r, i)
+        col_square = Coord(i, target.c)
+        if row_square not in board:
+            row_to_fill.append(row_square)
+        if col_square not in board:
+            col_to_fill.append(col_square)
 
     # get starting nodes
     start_nodes = []
@@ -142,16 +148,14 @@ def astar(board, target):
 
             # if child on closed list
             if child in closed:
-                print("child in closed or blocked")
+                print("child in closed")
                 continue        # skip to next child
 
             # otherwise create child
             child.g = curr_node.g + 1
-            # TODO: find closest target and calculate manhatten dist
-            # TODO: calc manhatten dist with wrap around
-            target_pos = smaller_rc(child.position, target)
-            child.h = ((child.position.r - target.r)**2) + ((child.position.c - target.c)**2)          
-            # manhatten dist
+            # TODO: h(x) = manhattan_dist to row/col + number of square left to fill in row/col     
+            child.h = manhattan_dist(child.position, target)
+            # child.h = 0
             child.f = child.g + child.h
 
             for open_node in open:
@@ -168,6 +172,7 @@ def adjacent(coord: Coord):
     adjacent_nodes.append(coord.left())
     adjacent_nodes.append(coord.right())
     return adjacent_nodes
+
 
 def uniform_cost_search(board: dict[Coord, PlayerColor], 
                         target: Coord):
