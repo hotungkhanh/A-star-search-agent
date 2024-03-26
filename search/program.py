@@ -37,7 +37,9 @@ def search(
     # for coord in path:
     #     print(coord)
 
-
+    new_state = State(None, board)
+    new_state = line_removal(new_state, target)
+    print(render_board(new_state.board, target))
 
 class State():
     '''
@@ -88,9 +90,39 @@ def manhattan_dist(p1: Coord, p2: Coord):
     return rdiff**2 + cdiff**2
     
 
-def line_removal(state: State):
+def line_removal(state: State, target) -> State:
+    '''
+    Checks if any rows are columns are completely filled with blocks
+    If there is, remove them from board
+    Return as new state
+
+    [Completed & Tested]
+    '''
+    new_state = State(state.parent, {})
+    del_row = []
+    del_col = []
+
+    # locate rows and cols to remove
     for i in range(11):
-        all_coords = state.board.keys()
+        # simultaneously check row i and col i to see if they are filled 
+        row_counter = 0
+        col_counter = 0
+        for coord in state.board:
+            if coord.r == i:
+                row_counter += 1
+            if coord.c == i:
+                col_counter += 1
+        if (row_counter >= 11):
+            del_row.append(i)
+        if (col_counter >= 11):
+            del_col.append(i)
+    
+    # remove specified rows and cols if any
+    for key in state.board.keys():
+        if (key.r not in del_row) and (key.c not in del_col):
+            new_state.board[key] = state.board[key]
+
+    return new_state
         
 
 
