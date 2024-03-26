@@ -32,54 +32,66 @@ def search(
     print(render_board(board, target, ansi=False))
 
     # Do some impressive AI stuff here to find the solution...
-    # ...
-    # ... (your solution goes here!)
-    # ...
 
-    # compute all possible starting nodes 
+    # path = (astar(board, target))
+    # for coord in path:
+    #     print(coord)
 
-    # answer = uniform_cost_search(board, target)
-    path = (astar(board, target))
-    for coord in path:
-        print(coord)
-    # Here we're returning "hardcoded" actions as an example of the expected
-    # output format. Of course, you should instead return the result of your
-    # search algorithm. Remember: if no solution is possible for a given input,
-    # return `None` instead of a list.
-    return [
-        PlaceAction(Coord(2, 5), Coord(2, 6), Coord(3, 6), Coord(3, 7)),
-        PlaceAction(Coord(1, 8), Coord(2, 8), Coord(3, 8), Coord(4, 8)),
-        PlaceAction(Coord(5, 8), Coord(6, 8), Coord(7, 8), Coord(8, 8)),
-    ]
 
-class Node():
-    """A node class for A* pathfinding"""
 
-    def __init__(self, parent=None, position=None):
-        self.parent = parent
-        self.position = position
+class State():
+    '''
+    A class representing one state of the board for A* pathfinding
+    '''
+
+    def __init__(self, parent=None, 
+                 board: dict[Coord, PlayerColor]=None, 
+                 piece: PlaceAction=None):
+        self.parent = parent        # parent node
+        self.board = board          # dict with key = Coord, val = colour
+        self.piece = piece          # a placeAction i.e. the piece added to parent 
 
         self.g = 0
         self.h = 0
         self.f = 0
 
-    # def __eq__(self, other):
-    #     return self.position == other.position
+    def __eq__(self, other: 'State'):
+        return self.board == other.board
     
     def __str__(self) -> str:
-        return f"Coord: {self.position}   f={self.f}"
+        return f"f={self.f}"
 
+    def generate_children(self) -> list['State']:
+        '''
+        Use search algorithm (DFS?) to find all possible pieces to place
+        '''
+
+        # Thoughts...
+        # Use DFS to find all possible place actions touching the most recently placed piece 
+        # We should be able to assume that all other possible combos have already been generated
+        # in parent state and thus don't need to be generated again
+
+        # So we should only need to run DFS with each of the 4 squares of the new piece as starting nodes
+
+        children = []
+        return children
 
 def manhattan_dist(p1: Coord, p2: Coord):
     '''
     Finds shortest manhatten distance between two Coords
     Takes into account the torus nature of board
     '''
+
     rdiff = min(abs(p1.r - p2.r), 10 - abs(p1.r - p2.r))
     cdiff = min(abs(p1.c - p2.c), 10 - abs(p1.c - p2.c))
 
     return rdiff**2 + cdiff**2
     
+
+def line_removal(state: State):
+    for i in range(11):
+        all_coords = state.board.keys()
+        
 
 
 def astar(board, target):
@@ -95,53 +107,47 @@ def astar(board, target):
             col_to_fill.append(col_square)
 
     # get starting nodes
-    start_nodes = []
-    for coord in board:
-        if board[coord] == PlayerColor.RED:
-            start_node = Node(None, coord)
-            start_node.g = start_node.h = start_node.f = 0
-            start_nodes.append(start_node)
+    start_state = State(None, board)
+    render_board(start_state.board, target)
 
-    open = []       # list of nodes
+    # lists of states
+    open = []
     closed = []
 
-    open.extend(start_nodes)
+    open.append(start_state)
 
     # loop until reaching goal state
     while len(open) > 0:
         
-        # get curr node
-        curr_node = open[0]
+        # get curr state  (i.e. state with highest priority)
+        curr_state = open[0]
         curr_idx = 0
-        for idx, item in enumerate(open):
-            if item.f < curr_node.f:
-                curr_node = item
+        for idx, state in enumerate(open):
+            if state.f < curr_state.f:
+                curr_state = state
                 curr_idx = idx
         
         # pop curr node off open list, add it to closed
         open.pop(curr_idx)
-        closed.append(curr_node)
+        closed.append(curr_state)
 
-        # check if goal is found
-        if curr_node.position == target:
+        # check if target is removed
+        # TODO: refine expression to check if target is removed
+        if target == None:
             path = []
-            current = curr_node
+            current = curr_state
             while current is not None:
-                path.append(current.position)
+                path.append(current.board)
                 current = current.parent
             return path[::-1]
         
-        # generate children as node
-        children = []
+        continue 
 
-        for adj in adjacent(curr_node.position):
-            # ensure target isn't ignored in board
-            if adj == target:
-                new_node = Node(parent=curr_node, position=adj)
-                children.append(new_node)
-            if adj not in board:
-                new_node = Node(parent=curr_node, position=adj)
-                children.append(new_node)
+        # ------------------------------------------------------------
+        # Under Construction
+        # ------------------------------------------------------------
+        # generate children as node
+        children = curr_state.generate_children()
 
         # loop through children
         for child in children:
@@ -152,7 +158,7 @@ def astar(board, target):
                 continue        # skip to next child
 
             # otherwise create child
-            child.g = curr_node.g + 1
+            child.g = curr_state.g + 1
             # TODO: h(x) = manhattan_dist to row/col + number of square left to fill in row/col     
             child.h = manhattan_dist(child.position, target)
             # child.h = 0
