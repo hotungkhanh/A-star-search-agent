@@ -90,12 +90,12 @@ class State():
                 for one in onecell:
                     # print(f" for {one} in onecell:")
                     if one:
-                        last = one[-1]
-                        adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
-                        for adjacent_coord in adjacent_coords:
-                            if adjacent_coord in self.board.keys():
-                                continue
-                            twocell.append(one + [adjacent_coord])
+                        for last in one:
+                            adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
+                            for adjacent_coord in adjacent_coords:
+                                if adjacent_coord in self.board.keys():
+                                    continue
+                                twocell.append(one + [adjacent_coord])
 
                 # print(f"twocell: {twocell}")
 
@@ -103,12 +103,12 @@ class State():
                 threecell = []
                 for two in twocell:
                     if two:
-                        last = two[-1]
-                        adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
-                        for adjacent_coord in adjacent_coords:
-                            if adjacent_coord in self.board.keys() or adjacent_coord in two:
-                                continue
-                            threecell.append(two + [adjacent_coord])
+                        for last in two:
+                            adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
+                            for adjacent_coord in adjacent_coords:
+                                if adjacent_coord in self.board.keys() or adjacent_coord in two:
+                                    continue
+                                threecell.append(two + [adjacent_coord])
 
                 # print(f"three: {threecell}")
 
@@ -116,12 +116,12 @@ class State():
                 fourcell = []
                 for three in threecell:
                     if three:
-                        last = three[-1]
-                        adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
-                        for adjacent_coord in adjacent_coords:
-                            if adjacent_coord in self.board.keys() or adjacent_coord in three:
-                                continue
-                            fourcell.append(three + [adjacent_coord])
+                        for last in three:
+                            adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
+                            for adjacent_coord in adjacent_coords:
+                                if adjacent_coord in self.board.keys() or adjacent_coord in three:
+                                    continue
+                                fourcell.append(three + [adjacent_coord])
 
                 # print(f"four: {fourcell}")
 
@@ -161,7 +161,23 @@ class State():
                     #         new_state = State(parent=self, board=new_board, piece=new_piece)
                     #         children.append(new_state)
 
-        return children[::-1]
+        return children
+    
+def heur(state: State, target) -> int:
+    # simultaneously check row i and col i to see if they are filled 
+    row_counter = 0
+    col_counter = 0
+
+    if target not in state.board:
+        return 0
+
+    for coord in state.board:
+        if coord.r == target.r:
+            row_counter += 1
+        if coord.c == target.c:
+            col_counter += 1
+    return min((11 - row_counter) / 4, (11 - col_counter)/4)
+
 
 def manhattan_dist(p1: Coord, p2: Coord):
     '''
@@ -279,10 +295,11 @@ def astar(board, target):
 
             # otherwise create child
             child.g = curr_state.g + 1
+            child.h = heur(child, target)
             # TODO: h(x) = manhattan_dist to row/col + number of square left to fill in row/col     
             # child.h = manhattan_dist(child.position, target)
             # child.h = 0
-            child.f = child.g # + child.h
+            child.f = child.g + child.h
 
             for open_node in open:
                 if child == open_node and child.g > open_node.g:
