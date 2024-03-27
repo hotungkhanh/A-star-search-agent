@@ -4,6 +4,7 @@
 from .core import PlayerColor, Coord, PlaceAction
 from .utils import render_board
 from collections import defaultdict as dd
+from math import sqrt
 
 
 def search(
@@ -31,17 +32,7 @@ def search(
     # codes, set the `ansi` flag to True to print a colour-coded version!
     print(render_board(board, target, ansi=True))
 
-    # state = State(None, board)
-    # children = state.generate_children()
-
-    # for child in children:
-    #     print(render_board(child.board, target, ansi=True))
-
     # Do some impressive AI stuff here to find the solution...
-
-    # path = (astar(board, target))
-    # for coord in path:
-    #     print(coord)
 
     return astar(board, target)
 
@@ -135,36 +126,9 @@ class State():
 
                     children.append(new_state)
 
-                    # # 3 steps
-                    # for i in range(3):                  
-                    #     new_adjacent_coords = [curr_coord.down(), curr_coord.up(), curr_coord.left(), curr_coord.right()]
-                        
-                    #     for new_adjacent_coord in new_adjacent_coords:
-                    #         new_coord = new_adjacent_coord
-                    #         print(f"new_coord: {new_coord}")
-
-                    #         # Check if the new coordinate overlaps with existing cells
-                    #         if new_coord in self.board.keys() or new_coord in new_piece_coords:
-                    #             valid_placement = False
-                    #             continue
-
-                    #         new_piece_coords.append(new_coord)
-                    #         print(f"new_piece_coords: {new_piece_coords}")
-                    #         curr_cord = new_coord
-                
-                    #     # If the placement is valid, create a new State object representing the board after the placement
-                    #     if valid_placement and len(new_piece_coords) == 4:
-                    #         new_board = dict(self.board)
-                    #         for new_coord in new_piece_coords:
-                    #             new_board[new_coord] = PlayerColor.RED
-                    #         new_piece = PlaceAction(*new_piece_coords)
-                    #         new_state = State(parent=self, board=new_board, piece=new_piece)
-                    #         children.append(new_state)
-
         return children
     
 def heur(state: State, target) -> int:
-    # simultaneously check row i and col i to see if they are filled 
     row_counter = 0
     col_counter = 0
 
@@ -180,26 +144,23 @@ def heur(state: State, target) -> int:
         if coord.c == target.c:
             col_counter += 1
 
-        if coord == target:
-            continue
-
         if state.board[coord] == PlayerColor.RED:
             rdiff = min(abs(coord.r - target.r), 11 - abs(coord.r - target.r))
             cdiff = min(abs(coord.c - target.c), 11 - abs(coord.c - target.c))
             
             if rdiff < nearest_row:
                 nearest_row = rdiff
-                print(f"rdiff coord: {coord}, nearest_row: {nearest_row}")
 
             if cdiff < nearest_col:
                 nearest_col = cdiff
-                print(f"cdiff coord: {coord}, nearest_col: {nearest_col}")
 
     print(f"nearest_row: {nearest_row}")
     print(f"nearest_col: {nearest_col}")
 
+    heur = min(nearest_row + (11 - row_counter), nearest_col + (11 - col_counter))
+    print(f"heur = {heur}")
             
-    return min(nearest_row + (11 - row_counter), nearest_col + (11 - col_counter))
+    return heur
 
 
 def manhattan_dist(p1: Coord, p2: Coord):
@@ -211,7 +172,7 @@ def manhattan_dist(p1: Coord, p2: Coord):
     rdiff = min(abs(p1.r - p2.r), 10 - abs(p1.r - p2.r))
     cdiff = min(abs(p1.c - p2.c), 10 - abs(p1.c - p2.c))
 
-    return rdiff**2 + cdiff**2
+    return sqrt(rdiff**2 + cdiff**2)
     
 
 def line_removal(state: State, target) -> State:
@@ -290,6 +251,7 @@ def astar(board, target):
         # check if target is removed
         # TODO: refine expression to check if target is removed
         if target not in curr_state.board.keys():
+            print(f"FINAL ANSWER: child.f = {curr_state.f}, child.g = {curr_state.g}, child.h = {curr_state.h}")
             path = []
             current = curr_state
             while current is not None:
@@ -323,6 +285,7 @@ def astar(board, target):
             # child.h = manhattan_dist(child.position, target)
             # child.h = 0
             child.f = child.g + child.h
+            print(f"child.f = {child.f}, child.g = {child.g}, child.h = {child.h}")
 
             for open_node in open:
                 if child == open_node and child.g > open_node.g:
@@ -338,77 +301,3 @@ def adjacent(coord: Coord):
     adjacent_nodes.append(coord.left())
     adjacent_nodes.append(coord.right())
     return adjacent_nodes
-
-
-def uniform_cost_search(board: dict[Coord, PlayerColor], target: Coord):
-
-    targets = adjacent(target)
-     
-    # minimum cost upto
-    # goal state from starting
-    cost = {}
-    parent = {}
- 
-    # map to store visited node
-    visited = {}
-
-    # create a priority queue
-    queue = []
-
-    for r in range(11):
-        for c in range(11):
-            cost[Coord(r, c)] = 10**8
- 
-    # insert the starting indices
-    for coord in board:
-        if board[coord] == PlayerColor.RED:
-            queue.append([0, coord])
-            cost[coord] = 0
-        else:
-            visited[coord] = 1
- 
-    # while the queue is not empty
-    while (len(queue) > 0):
- 
-        # get the top element of the
-        queue = sorted(queue)
-        currentsquare = queue[-1]
- 
-        # pop the element
-        del queue[-1]
- 
-        # get the original value
-        currentsquare[0] *= -1
- 
-        # check if the element is part of
-        # the goal list
-        if (currentsquare[1] in targets):
- 
-            # pop the element
-            del queue[-1]
- 
-            queue = sorted(queue)
-            parent[target] = currentsquare[1]
-            break
- 
-        # check for the non visited nodes
-        # which are adjacent to present node
-        if currentsquare[1] not in visited:
-            for adjsquare in adjacent(currentsquare[1]):
-
-                if adjsquare not in board:
-                    if cost[adjsquare] > cost[currentsquare[1]] + 1:
-                        queue.append( [(currentsquare[0] + 1)* -1, adjsquare])
-                        cost[adjsquare] = cost[currentsquare[1]] + 1
-                        parent[adjsquare] = currentsquare[1]
-
-        visited[currentsquare[1]] = 1
-
-    path = []
-    node = target
-    while node is not None:
-        path.insert(0, node)
-        node = parent.get(node)
-    if len(path) == 1:
-        return None
-    return path
