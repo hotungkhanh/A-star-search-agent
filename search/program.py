@@ -168,6 +168,9 @@ def heur(state: State, target) -> int:
     row_counter = 0
     col_counter = 0
 
+    nearest_row = 11
+    nearest_col = 11
+
     if target not in state.board:
         return 0
 
@@ -176,7 +179,27 @@ def heur(state: State, target) -> int:
             row_counter += 1
         if coord.c == target.c:
             col_counter += 1
-    return min((11 - row_counter) / 4, (11 - col_counter)/4)
+
+        if coord == target:
+            continue
+
+        if state.board[coord] == PlayerColor.RED:
+            rdiff = min(abs(coord.r - target.r), 11 - abs(coord.r - target.r))
+            cdiff = min(abs(coord.c - target.c), 11 - abs(coord.c - target.c))
+            
+            if rdiff < nearest_row:
+                nearest_row = rdiff
+                print(f"rdiff coord: {coord}, nearest_row: {nearest_row}")
+
+            if cdiff < nearest_col:
+                nearest_col = cdiff
+                print(f"cdiff coord: {coord}, nearest_col: {nearest_col}")
+
+    print(f"nearest_row: {nearest_row}")
+    print(f"nearest_col: {nearest_col}")
+
+            
+    return min(nearest_row + (11 - row_counter), nearest_col + (11 - col_counter))
 
 
 def manhattan_dist(p1: Coord, p2: Coord):
@@ -294,7 +317,7 @@ def astar(board, target):
                 continue        # skip to next child
 
             # otherwise create child
-            child.g = curr_state.g + 1
+            child.g = curr_state.g + 4
             child.h = heur(child, target)
             # TODO: h(x) = manhattan_dist to row/col + number of square left to fill in row/col     
             # child.h = manhattan_dist(child.position, target)
