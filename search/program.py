@@ -4,7 +4,7 @@
 from .core import PlayerColor, Coord, PlaceAction
 from .utils import render_board
 from collections import defaultdict as dd
-from math import sqrt
+from queue import PriorityQueue as pq
 
 
 def search(
@@ -57,7 +57,6 @@ class State():
     
     def __str__(self) -> str:
         return f"f={self.f}"
-
 
     def test_gen_children(self, target) -> list['State']:
         children = []
@@ -293,45 +292,37 @@ def astar(board, target):
     render_board(start_state.board, target)
 
     # lists of states
-    open = []
-    closed = []
+    open = pq()         # stores a list containing [f(x), state]
+    closed = []         # only stores states
 
-    open.append(start_state)
+    open.put((start_state.f, start_state))
+
 
     # loop until reaching goal state
-    while len(open) > 0:
+    while open.qsize() > 0:
         
         # get curr state  (i.e. state with highest priority)
-        curr_state = open[0]
-        curr_idx = 0
-        for idx, state in enumerate(open):
-            if state.f < curr_state.f:
-                curr_state = state
-                curr_idx = idx
-        
-        # pop curr node off open list, add it to closed
-        open.pop(curr_idx)
-        closed.append(curr_state)
+        for item in open.queue:
+            print(item)
+        curr_state = open.get()
+        print("curr state:", curr_state)
+
+        closed.append(curr_state[1])
 
         # check if target is removed
         # TODO: refine expression to check if target is removed
-        if target not in curr_state.board.keys():
-            print(f"FINAL ANSWER: child.f = {curr_state.f}, child.g = {curr_state.g}, child.h = {curr_state.h}")
+        if target not in curr_state[1].board.keys():
+            print(f"FINAL ANSWER: child.f = {curr_state[1].f}, child.g = {curr_state[1].g}, child.h = {curr_state[1].h}")
             path = []
-            current = curr_state
+            current = curr_state[1]
             while current is not None:
                 if current.piece:
                     path.append(current.piece)
                 current = current.parent
             return path[::-1]
         
-        # continue 
-
-        # ------------------------------------------------------------
-        # Under Construction
-        # ------------------------------------------------------------
-        # generate children as node
-        children = curr_state.generate_children(target)
+        # generate children as states
+        children = curr_state[1].generate_children(target)
 
         # loop through children
         for child in children:
@@ -344,16 +335,20 @@ def astar(board, target):
                 continue        # skip to next child
 
             # otherwise create child
-            child.g = curr_state.g + 4
+            child.g = curr_state[1].g + 4
             child.h = heur(child, target)
             # TODO: h(x) = manhattan_dist to row/col + number of square left to fill in row/col     
-            # child.h = manhattan_dist(child.position, target)
-            # child.h = 0
             child.f = child.g + child.h
             print(f"child.f = {child.f}, child.g = {child.g}, child.h = {child.h}")
 
-            for open_node in open:
-                if child == open_node and child.g > open_node.g:
+            # check if the child state is already in the queue
+            better = True
+            for open_node in open.queue:
+                if child == open_node[1] and child.g > open_node[1].g:
+                    better = False
                     continue
-            
-            open.append(child)
+
+            # if child state is already in the queue and has lower g(x), don't add child to queue
+            if better:
+                open.put((child.f, child))
+
