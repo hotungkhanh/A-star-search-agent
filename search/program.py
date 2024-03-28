@@ -58,76 +58,153 @@ class State():
     def __str__(self) -> str:
         return f"f={self.f}"
 
+
+    def test_gen_children(self, target) -> list['State']:
+        children = []
+
+        for curr_coord, colour in self.board.items():
+            adj_pieces = []
+            if colour == PlayerColor.BLUE:
+                continue
+
+            adj_coords = adjacent(curr_coord)
+
+            # recursively find adj pieces 
+            for adj in adj_coords:
+                if adj in self.board.keys():
+                    continue
+                curr_path = [adj]
+
+                adj_piece = self.recursive_adj_cells(adj, curr_path, 1, 4)
+
+                adj_pieces.extend(adj_piece)
+
+            for new_piece_coords in adj_pieces:
+                new_board = dict(self.board)
+                for new_coord in new_piece_coords:
+                    new_board[new_coord] = PlayerColor.RED
+                new_piece = PlaceAction(new_piece_coords)
+                new_state = State(self, new_board, new_piece)
+                new_state = line_removal(new_state, target)
+
+                children.append(new_state)
+
+        return children
+
+    def recursive_adj_cells(self, curr_coord, curr_path, depth, max_depth):
+        print("------------NEW RECUR CALL ---------------")
+        print("curr coord:", curr_coord)      
+        print("curr path:", curr_path)  
+
+        if depth >= max_depth:
+            print("----- BASE CASE ------")
+            print(curr_path)
+            return curr_path
+        adj_coords = adjacent(curr_coord)
+
+        all_deeper_paths = []      # a list of list of coords
+
+        for adj in adj_coords:
+            if (adj not in self.board.keys()) and (adj not in curr_path):
+                # print("here")
+                new_path = curr_path + [adj]
+                deeper_paths = self.recursive_adj_cells(adj, new_path, depth + 1, max_depth)
+                print('\ndeeper:', deeper_paths)
+                all_deeper_paths.append(deeper_paths)
+
+        print()
+        print(all_deeper_paths)
+        
+        # if depth == max_depth:
+        #     return[[curr_coord] + path for path in adj_cells]
+
+        return all_deeper_paths
+
     def generate_children(self, target) -> list['State']:
         children = []
 
         # Iterate over all red cells on the board
-        for coord, color in self.board.items():
+        for curr_coord, color in self.board.items():
             # print(f"coord, color: {coord}, {color}")
-            if color == PlayerColor.RED:
+            if color == PlayerColor.BLUE:
+                continue
 
-                # STEP 1
-                onecell = []
-                adjacent_coords = [coord.down(), coord.up(), coord.left(), coord.right()]
-                for adjacent_coord in adjacent_coords:
-                    if adjacent_coord in self.board.keys():
-                        continue
-                    onecell.append([adjacent_coord])
+            # STEP 1
+            onecell = []
+            adjacent_coords = adjacent(curr_coord)
+            for adjacent_coord in adjacent_coords:
+                if adjacent_coord in self.board.keys():
+                    continue
+                onecell.append([adjacent_coord])
 
-                # print(f"onecell: {onecell}")
+            # print(f"onecell: {onecell}")
 
-                # STEP 2
-                twocell = []
-                for one in onecell:
-                    # print(f" for {one} in onecell:")
-                    if one:
-                        for last in one:
-                            adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
-                            for adjacent_coord in adjacent_coords:
-                                if adjacent_coord in self.board.keys():
-                                    continue
-                                twocell.append(one + [adjacent_coord])
+            # STEP 2
+            twocell = []
+            for one in onecell:
+                # print(f" for {one} in onecell:")
+                if one:
+                    for last in one:
+                        adjacent_coords = adjacent(last)
+                        for adjacent_coord in adjacent_coords:
+                            if adjacent_coord in self.board.keys():
+                                continue
+                            twocell.append(one + [adjacent_coord])
 
-                # print(f"twocell: {twocell}")
+            # print(f"twocell: {twocell}")
 
-                # STEP 3
-                threecell = []
-                for two in twocell:
-                    if two:
-                        for last in two:
-                            adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
-                            for adjacent_coord in adjacent_coords:
-                                if adjacent_coord in self.board.keys() or adjacent_coord in two:
-                                    continue
-                                threecell.append(two + [adjacent_coord])
+            # STEP 3
+            threecell = []
+            for two in twocell:
+                if two:
+                    for last in two:
+                        adjacent_coords = adjacent(last)
+                        for adjacent_coord in adjacent_coords:
+                            if adjacent_coord in self.board.keys() or adjacent_coord in two:
+                                continue
+                            threecell.append(two + [adjacent_coord])
 
-                # print(f"three: {threecell}")
+            # print(f"three: {threecell}")
 
-                # STEP 4
-                fourcell = []
-                for three in threecell:
-                    if three:
-                        for last in three:
-                            adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
-                            for adjacent_coord in adjacent_coords:
-                                if adjacent_coord in self.board.keys() or adjacent_coord in three:
-                                    continue
-                                fourcell.append(three + [adjacent_coord])
+            # STEP 4
+            fourcell = []
+            for three in threecell:
+                if three:
+                    for last in three:
+                        adjacent_coords = adjacent(last)
+                        for adjacent_coord in adjacent_coords:
+                            if adjacent_coord in self.board.keys() or adjacent_coord in three:
+                                continue
+                            fourcell.append(three + [adjacent_coord])
 
-                # print(f"four: {fourcell}")
+            # print(f"four: {fourcell}")
 
-                for new_piece_coords in fourcell:
-                    new_board = dict(self.board)
-                    for new_coord in new_piece_coords:
-                        new_board[new_coord] = PlayerColor.RED
-                    new_piece = PlaceAction(*new_piece_coords)
-                    new_state = State(self, new_board, new_piece)
-                    new_state = line_removal(new_state, target)
+            for new_piece_coords in fourcell:
+                # create new board
+                new_board = dict(self.board)
+                for new_coord in new_piece_coords:
+                    new_board[new_coord] = PlayerColor.RED
+                new_piece = PlaceAction(*new_piece_coords)
+                new_state = State(self, new_board, new_piece)
+                new_state = line_removal(new_state, target)
 
-                    children.append(new_state)
+                children.append(new_state)
 
         return children
     
+def adjacent(coord: Coord):
+    '''
+    Takes a Coord as an argument
+    Returns an array of all 4 possible adjacent Coords
+    '''
+    adjacent_coords = []
+    adjacent_coords.append(coord.down())
+    adjacent_coords.append(coord.up())
+    adjacent_coords.append(coord.left())
+    adjacent_coords.append(coord.right())
+    return adjacent_coords
+
+
 def heur(state: State, target) -> int:
     row_counter = 0
     col_counter = 0
@@ -154,26 +231,14 @@ def heur(state: State, target) -> int:
             if cdiff < nearest_col:
                 nearest_col = cdiff
 
-    print(f"nearest_row: {nearest_row}")
-    print(f"nearest_col: {nearest_col}")
+    # print(f"nearest_row: {nearest_row}")
+    # print(f"nearest_col: {nearest_col}")
 
     heur = min(nearest_row + (11 - row_counter), nearest_col + (11 - col_counter))
-    print(f"heur = {heur}")
+    # print(f"heur = {heur}")
             
     return heur
 
-
-def manhattan_dist(p1: Coord, p2: Coord):
-    '''
-    Finds shortest manhatten distance between two Coords
-    Takes into account the torus nature of board
-    '''
-
-    rdiff = min(abs(p1.r - p2.r), 10 - abs(p1.r - p2.r))
-    cdiff = min(abs(p1.c - p2.c), 10 - abs(p1.c - p2.c))
-
-    return sqrt(rdiff**2 + cdiff**2)
-    
 
 def line_removal(state: State, target) -> State:
     '''
@@ -292,12 +357,3 @@ def astar(board, target):
                     continue
             
             open.append(child)
-
-
-def adjacent(coord: Coord):
-    adjacent_nodes = []
-    adjacent_nodes.append(coord.down())
-    adjacent_nodes.append(coord.up())
-    adjacent_nodes.append(coord.left())
-    adjacent_nodes.append(coord.right())
-    return adjacent_nodes
