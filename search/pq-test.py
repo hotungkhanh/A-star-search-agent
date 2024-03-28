@@ -28,12 +28,15 @@ print(hash(PlayerColor.BLUE))
 # player colours hash to diff values
 
 print("\n(Coord, Colour) Hash")
-d1 = (c1, PlayerColor.RED), 
-d2 = (c2, PlayerColor.BLUE)
+d1 = (c1, PlayerColor.RED)
+d2 = (c3, PlayerColor.BLUE)
+d3 = (Coord(6, 4), PlayerColor.RED)
 
 print(hash(d1))
 print(hash(d2))
 
 print("\nTuple of (Coord, Colour) Hash")
-e1 = (d1, d2)
+e1 = (d1, d2, d3)
+print(e1)
 print(hash(e1))
+# Tuple of Tuples is hashable
