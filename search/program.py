@@ -139,7 +139,7 @@ class State():
         return all_deeper_paths
 
     def generate_children(self, target) -> list['State']:
-        children = []
+        children = set()
 
         # Iterate over all red cells on the board
         for square in self.board:
@@ -155,8 +155,6 @@ class State():
                     continue
                 onecell.append([adjacent_coord])
 
-            # print(f"onecell: {onecell}")
-
             # STEP 2
             twocell = []
             for one in onecell:
@@ -169,8 +167,6 @@ class State():
                                 continue
                             twocell.append(one + [adjacent_coord])
 
-            # print(f"twocell: {twocell}")
-
             # STEP 3
             threecell = []
             for two in twocell:
@@ -181,8 +177,6 @@ class State():
                             if any(adjacent_coord in i for i in self.board) or (adjacent_coord in two):
                                 continue
                             threecell.append(two + [adjacent_coord])
-
-            # print(f"three: {threecell}")
 
             # STEP 4
             fourcell = []
@@ -195,8 +189,6 @@ class State():
                                 continue
                             fourcell.append(three + [adjacent_coord])
 
-            # print(f"four: {fourcell}")
-
             for new_piece_coords in fourcell:
                 # create new board
                 new_board = self.dict_board()
@@ -206,7 +198,7 @@ class State():
                 new_state = State(self, new_board, new_piece)
                 new_state = line_removal(new_state)
 
-                children.append(new_state)
+                children.add(new_state)
 
         return children
     
@@ -302,7 +294,7 @@ def astar(board, target):
 
     # lists of states
     open = pq()         # stores a list of state
-    closed = []         # only stores states
+    closed = set()         # only stores states
 
     open.put(start_state)
 
@@ -314,11 +306,9 @@ def astar(board, target):
         curr_state = open.get()
         # print(render_board(curr_state.dict_board(), target, ansi=True))
 
-        closed.append(curr_state)
-
         # check if target is removed
         # TODO: refine expression to check if target is removed
-        if not (any(target in i for i in curr_state.board)):
+        if target not in (tup[0] for tup in curr_state.board):
             print(f"FINAL ANSWER: child.f = {curr_state.f}, child.g = {curr_state.g}, child.h = {curr_state.h}")
             path = []
             current = curr_state
@@ -329,32 +319,32 @@ def astar(board, target):
             print("total runtime in secs:", time.time() - start_time)
             return path[::-1]
         
-        # generate children as states
-        children = curr_state.generate_children(target)
+        if curr_state not in closed:
 
-        # loop through children
-        for child in children:
+            # generate children as states
+            children = curr_state.generate_children(target)
 
-            print(render_board(child.dict_board(), target, ansi=True))
-            # if child on closed list
-            if child in closed:
-                print("child in closed\n\n\n")
-                continue        # skip to next child
+            # loop through children
+            for child in children:
 
-            # otherwise create child
-            child.g = curr_state.g + 4
-            child.h = heur(child, target)
-            # TODO: h(x) = manhattan_dist to row/col + number of square left to fill in row/col     
-            child.f = child.g + child.h
-            print(f"child.f = {child.f}, child.g = {child.g}, child.h = {child.h}")
+                print(render_board(child.dict_board(), target, ansi=True))
 
-            # check if the child state is already in the queue
-            for open_node in open.queue:
-                # open_node is a state
-                if child.board == open_node.board and child.g >= open_node.g:
-                    continue
+                # otherwise create child
+                child.g = curr_state.g + 4
+                child.h = heur(child, target)
+                # TODO: h(x) = manhattan_dist to row/col + number of square left to fill in row/col     
+                child.f = child.g + child.h
+                print(f"child.f = {child.f}, child.g = {child.g}, child.h = {child.h}")
 
-            open.put(child)
+                # # check if the child state is already in the queue
+                # for open_node in open.queue:
+                #     # open_node is a state
+                #     if child.board == open_node.board and child.g >= open_node.g:
+                #         continue
+                if child not in closed:
+                    open.put(child)
+
+        closed.add(curr_state)
 
             # better = True
             # for open_node in open.queue:
