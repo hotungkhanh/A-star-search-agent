@@ -3,7 +3,6 @@
 
 from .core import PlayerColor, Coord, PlaceAction
 from .utils import render_board
-from collections import defaultdict as dd
 from queue import PriorityQueue as pq
 import time
 
@@ -47,13 +46,14 @@ class State():
         self.parent = parent        # parent node
         self.board = board          # dict with key = Coord, val = colour
         self.piece = piece          # a placeAction i.e. the piece added to parent
+        self.hashvalue = self.__hash__()
 
         self.g = 0
         self.h = 0
         self.f = 0
 
     def __eq__(self, other: 'State'):
-        return self.__hash__() == other.__hash__()
+        return self.hashvalue == other.hashvalue
     
     def __str__(self) -> str:
         return f"f={self.f}"
