@@ -48,8 +48,8 @@ class State():
         self.parent = parent        # parent node
         self.board = board          # dict with key = Coord, val = colour
         self.piece = piece          # a placeAction i.e. the piece added to parent
+        
         self.hashvalue = self.__hash__()
-
         self.g = 0
         self.h = 0
         self.f = 0
@@ -58,12 +58,12 @@ class State():
         return self.hashvalue == other.hashvalue
     
     def __str__(self) -> str:
-        return f"f={self.f}"
+        return f"f={self.hashvalue}"
 
     def __hash__(self) -> int:
         all_coords = []
         for tup in self.board.items():
-            all_coords.append(tup)
+            all_coords.append((tup))
 
         return hash(tuple(sorted(all_coords)))
     
@@ -140,7 +140,7 @@ class State():
         return all_deeper_paths
 
     def generate_children(self, target) -> list['State']:
-        children = set()
+        children = []
 
          # Iterate over all red cells on the board
         for coord, color in self.board.items():
@@ -188,7 +188,11 @@ class State():
                                     continue
                                 fourcell.append(three + [adjacent_coord])
 
-                for new_piece_coords in sorted(fourcell):
+                myset = set()
+                for new_piece_coords in fourcell:
+                    myset.add(tuple(sorted(new_piece_coords)))
+
+                for new_piece_coords in myset:
                     # create new board
                     new_board = dict(self.board)
                     for new_coord in sorted(new_piece_coords):
@@ -197,9 +201,9 @@ class State():
                     new_state = State(self, new_board, new_piece)
                     new_state = line_removal(new_state)
 
-                    children.add(new_state)
+                    children.append(new_state)
 
-        return sorted(children)
+        return children
     
 def adjacent(
         coord: Coord
@@ -344,15 +348,9 @@ def astar(
         
         if curr_state not in explored:
 
-            # generate children as states
-            children = curr_state.generate_children(target)
-
-            # loop through children
-            for child in children:
-
-                if target not in child.board.keys():
+            if target not in curr_state.board.keys():
                     path = []
-                    current = child
+                    current = curr_state
                     while current is not None:
                         if current.piece:
                             path.append(current.piece)
@@ -360,7 +358,12 @@ def astar(
                     print("total runtime in secs:", time.time() - start_time)
                     return path[::-1]
 
-                # otherwise create child
+            # generate children as states
+            children = curr_state.generate_children(target)
+
+            # loop through children
+            for child in children:
+
                 child.g = curr_state.g + 4
                 child.h = heur(child, target)
                 child.f = child.g + child.h
