@@ -37,7 +37,9 @@ def search(
 
 class State():
     '''
-    A class representing one state of the board for A* pathfinding
+    A class representing one state of the game, along with its path cost, 
+    heuristic function value, and overall evaluation function value for A*
+    pathfinding.
     '''
 
     def __init__(self, parent=None, 
@@ -69,6 +71,10 @@ class State():
         return (self.f > other.f)
 
     def test_gen_children(self, target) -> list['State']:
+        '''
+        Calling function for recursive children generation
+        [under construction]
+        '''
         children = []
 
         for curr_coord, colour in self.board.items():
@@ -94,13 +100,17 @@ class State():
                     new_board[new_coord] = PlayerColor.RED
                 new_piece = PlaceAction(*new_piece_coords)
                 new_state = State(self, new_board, new_piece)
-                new_state = line_removal(new_state, target)
+                new_state = line_removal(new_state)
 
                 children.append(new_state)
 
         return children
 
     def recursive_adj_cells(self, curr_coord, curr_path, depth, max_depth):
+        '''
+        Recursively generates children states
+        [under construction]
+        '''
         print("------------NEW RECUR CALL ---------------")
         print("curr coord:", curr_coord)      
         print("curr path:", curr_path)  
@@ -185,17 +195,26 @@ class State():
                         new_board[new_coord] = PlayerColor.RED
                     new_piece = PlaceAction(*new_piece_coords)
                     new_state = State(self, new_board, new_piece)
-                    new_state = line_removal(new_state, target)
+                    new_state = line_removal(new_state)
 
                     children.add(new_state)
 
         return sorted(children)
     
-def adjacent(coord: Coord):
+def adjacent(
+        coord: Coord
+):
     '''
-    Takes a Coord as an argument
-    Returns an array of all 4 possible adjacent Coords
+    Computes all 4 possible adjacent coordinates
+
+    Parameters:
+        `coord`: a `Coord` instance that represents a coordinate that we want
+        to find adjacent coordinates for
+
+    Returns:
+        An array of adjacent coordinates on the board
     '''
+
     adjacent_coords = []
     adjacent_coords.append(coord.down())
     adjacent_coords.append(coord.up())
@@ -204,7 +223,21 @@ def adjacent(coord: Coord):
     return adjacent_coords
 
 
-def heur(state: State, target) -> int:
+def heur(
+        state: State, 
+        target
+) -> int:
+    '''
+    Computes the heuristic function h(x) used for A* pathfinding
+
+    Parameters:
+        `state`: a `State` instance that represents the given board state
+        `target`: the target BLUE coordinate to remove from the board
+
+    Returns:
+        The integer value of h(x)
+    '''
+
     row_counter = 0
     col_counter = 0
 
@@ -235,14 +268,18 @@ def heur(state: State, target) -> int:
     return heur
 
 
-def line_removal(state: State, target) -> State:
+def line_removal(
+        state: State
+) -> State:
     '''
-    Checks if any rows are columns are completely filled with blocks
-    If there is, remove them from board
-    Return as new state
+    Takes a State as input
 
-    [Completed & Tested]
+    Removes any rows or columns that are completely filled with blocks
+    i.e. performs the line removal mechanic
+
+    Returns a new State with the appropriate rows or columns removed
     '''
+
     new_state = State(state.parent, {}, state.piece)
     del_row = []
     del_col = []
@@ -270,7 +307,24 @@ def line_removal(state: State, target) -> State:
     return new_state
         
 
-def astar(board, target):
+def astar(
+        board: dict[Coord, PlayerColor], 
+        target: Coord
+):
+    '''
+    Uses a modified version of A* pathfinding to solve the game
+    Goal: remove the target Coord from the board
+
+    Parameters:
+        `board`: a dictionary representing the initial board state, with `Coord`
+        instances as keys, and `PlayerColor` instances as values
+        `target`: the target BLUE coordinate to remove from the board
+
+    Returns:
+        A list of PlaceActions to reach the goal, or `None` if the goal is not 
+        achievable
+    '''
+
     start_time = time.time()
     # get starting nodes
     start_state = State(None, board)
@@ -284,11 +338,9 @@ def astar(board, target):
 
     # loop until reaching goal state
     while frontier.qsize() > 0:
+
         # get curr state  (i.e. state with highest priority)
         curr_state = frontier.get()
-        # print(render_board(curr_state.dict_board(), target, ansi=True))
-        # check if target is removed
-        # TODO: refine expression to check if target is removed
         
         if curr_state not in explored:
 
@@ -317,3 +369,5 @@ def astar(board, target):
                     frontier.put(child)
 
         explored.add(curr_state)
+        
+    return
