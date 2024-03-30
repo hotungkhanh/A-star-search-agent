@@ -6,6 +6,7 @@ from .utils import render_board
 from queue import PriorityQueue as pq
 import time
 
+# MAGIC NUMBER 11
 
 def search(
     board: dict[Coord, PlayerColor], 
@@ -36,11 +37,11 @@ def search(
     return astar(board, target)
 
 class State():
-    '''
+    """
     A class representing one state of the game, along with its path cost, 
     heuristic function value, and overall evaluation function value for A*
     pathfinding.
-    '''
+    """
 
     def __init__(self, parent=None, 
                  board: dict[Coord, PlayerColor]=None, 
@@ -65,150 +66,50 @@ class State():
         for tup in self.board.items():
             all_coords.append((tup))
 
-        return hash(tuple(sorted(all_coords)))
+        return hash(tuple(all_coords))
     
     def __gt__(self, other: 'State'):
         return (self.f > other.f)
-
-    def test_gen_children(self, target) -> list['State']:
-        '''
-        Calling function for recursive children generation
-        [under construction]
-        '''
-        children = []
-
-        for curr_coord, colour in self.board.items():
-            adj_pieces = []
-            if colour == PlayerColor.BLUE:
-                continue
-
-            adj_coords = adjacent(curr_coord)
-
-            # recursively find adj pieces 
-            for adj in adj_coords:
-                if adj in self.board.keys():
-                    continue
-                curr_path = [adj]
-
-                adj_piece = self.recursive_adj_cells(adj, curr_path, 1, 4)
-
-                adj_pieces.extend(adj_piece)
-
-            for new_piece_coords in adj_pieces:
-                new_board = dict(self.board)
-                for new_coord in new_piece_coords:
-                    new_board[new_coord] = PlayerColor.RED
-                new_piece = PlaceAction(*new_piece_coords)
-                new_state = State(self, new_board, new_piece)
-                new_state = line_removal(new_state)
-
-                children.append(new_state)
-
-        return children
-
-    def recursive_adj_cells(self, curr_coord, curr_path, depth, max_depth):
-        '''
-        Recursively generates children states
-        [under construction]
-        '''
-        print("------------NEW RECUR CALL ---------------")
-        print("curr coord:", curr_coord)      
-        print("curr path:", curr_path)  
-
-        if depth >= max_depth:
-            print("----- BASE CASE ------")
-            print(curr_path)
-            return curr_path
-        adj_coords = adjacent(curr_coord)
-
-        all_deeper_paths = []      # a list of list of coords
-
-        for adj in adj_coords:
-            if (adj not in self.board.keys()) and (adj not in curr_path):
-                # print("here")
-                new_path = curr_path + [adj]
-                deeper_paths = self.recursive_adj_cells(adj, new_path, depth + 1, max_depth)
-                print('\ndeeper:', deeper_paths)
-                all_deeper_paths.append(deeper_paths)
-
-        print()
-        print(all_deeper_paths)
-        
-        # if depth == max_depth:
-        #     return[[curr_coord] + path for path in adj_cells]
-
-        return all_deeper_paths
-
+    
     def generate_children(self, target) -> list['State']:
         children = []
 
-         # Iterate over all red cells on the board
         for coord, color in self.board.items():
             if color == PlayerColor.RED:
-
-                # STEP 1
-                onecell = []
-                adjacent_coords = [coord.down(), coord.up(), coord.left(), coord.right()]
-                for adjacent_coord in adjacent_coords:
-                    if adjacent_coord in self.board.keys():
-                        continue
-                    onecell.append([adjacent_coord])
-
-                # STEP 2
-                twocell = []
-                for one in onecell:
-                    if one:
-                        for last in one:
-                            adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
-                            for adjacent_coord in adjacent_coords:
-                                if adjacent_coord in self.board.keys():
-                                    continue
-                                twocell.append(one + [adjacent_coord])
-
-                # STEP 3
-                threecell = []
-                for two in twocell:
-                    if two:
-                        for last in two:
-                            adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
-                            for adjacent_coord in adjacent_coords:
-                                if adjacent_coord in self.board.keys() or adjacent_coord in two:
-                                    continue
-                                threecell.append(two + [adjacent_coord])
-
-
-                # STEP 4
-                fourcell = []
-                for three in threecell:
-                    if three:
-                        for last in three:
-                            adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
-                            for adjacent_coord in adjacent_coords:
-                                if adjacent_coord in self.board.keys() or adjacent_coord in three:
-                                    continue
-                                fourcell.append(three + [adjacent_coord])
-
-                myset = set()
-                for new_piece_coords in fourcell:
-                    myset.add(tuple(sorted(new_piece_coords)))
-
-                for new_piece_coords in myset:
-                    # create new board
+                piece_combinations = self.generate_piece_combinations(coord)
+                for piece_coords in piece_combinations:
                     new_board = dict(self.board)
-                    for new_coord in sorted(new_piece_coords):
+                    for new_coord in piece_coords:
                         new_board[new_coord] = PlayerColor.RED
-                    new_piece = PlaceAction(*new_piece_coords)
+                    new_piece = PlaceAction(*piece_coords)
                     new_state = State(self, new_board, new_piece)
                     new_state = line_removal(new_state)
-
                     children.append(new_state)
 
         return children
+
+    def generate_piece_combinations(self, touched_coord) -> list:
+        """
+        Generate all possible piece combinations touching a given coordinate.
+        """
+        piece_combinations = set()
+        stack = [(touched_coord, [])]
+
+        while stack:
+            current_coord, current_piece = stack.pop()
+            if len(current_piece) == 4:
+                piece_combinations.add(tuple(sorted(current_piece)))
+            else:
+                for adjacent_coord in adjacent(current_coord):
+                    if adjacent_coord not in self.board and adjacent_coord not in current_piece:
+                        stack.append((adjacent_coord, current_piece + [adjacent_coord]))
+
+        return piece_combinations
     
 def adjacent(
         coord: Coord
 ):
-    '''
+    """
     Computes all 4 possible adjacent coordinates
 
     Parameters:
@@ -217,21 +118,15 @@ def adjacent(
 
     Returns:
         An array of adjacent coordinates on the board
-    '''
-
-    adjacent_coords = []
-    adjacent_coords.append(coord.down())
-    adjacent_coords.append(coord.up())
-    adjacent_coords.append(coord.left())
-    adjacent_coords.append(coord.right())
-    return adjacent_coords
+    """
+    return [coord.down(), coord.up(), coord.left(), coord.right()]
 
 
-def heur(
+def heuristic(
         state: State, 
         target
 ) -> int:
-    '''
+    """
     Computes the heuristic function h(x) used for A* pathfinding
 
     Parameters:
@@ -240,7 +135,7 @@ def heur(
 
     Returns:
         The integer value of h(x)
-    '''
+    """
 
     row_counter = 0
     col_counter = 0
@@ -267,22 +162,22 @@ def heur(
             if cdiff < nearest_col:
                 nearest_col = cdiff
 
-    heur = min(nearest_row + (11 - row_counter), nearest_col + (11 - col_counter))
+    heur_value = min(nearest_row + (11 - row_counter), nearest_col + (11 - col_counter))
             
-    return heur
+    return heur_value
 
 
 def line_removal(
         state: State
 ) -> State:
-    '''
+    """
     Takes a State as input
 
     Removes any rows or columns that are completely filled with blocks
     i.e. performs the line removal mechanic
 
     Returns a new State with the appropriate rows or columns removed
-    '''
+    """
 
     new_state = State(state.parent, {}, state.piece)
     del_row = []
@@ -305,7 +200,7 @@ def line_removal(
     
     # remove specified rows and cols if any
     for key in state.board.keys():
-        if (key.r not in del_row) and (key.c not in del_col):
+        if key.r not in del_row and key.c not in del_col:
             new_state.board[key] = state.board[key]
 
     return new_state
@@ -315,7 +210,7 @@ def astar(
         board: dict[Coord, PlayerColor], 
         target: Coord
 ):
-    '''
+    """
     Uses a modified version of A* pathfinding to solve the game
     Goal: remove the target Coord from the board
 
@@ -327,7 +222,7 @@ def astar(
     Returns:
         A list of PlaceActions to reach the goal, or `None` if the goal is not 
         achievable
-    '''
+    """
 
     start_time = time.time()
     # get starting nodes
@@ -338,7 +233,6 @@ def astar(
     explored = set()         # only stores states
 
     frontier.put(start_state)
-
 
     # loop until reaching goal state
     while frontier.qsize() > 0:
@@ -355,7 +249,7 @@ def astar(
                         if current.piece:
                             path.append(current.piece)
                         current = current.parent
-                    print("total runtime in secs:", time.time() - start_time)
+                    print("Runtime:", time.time() - start_time)
                     return path[::-1]
 
             # generate children as states
@@ -365,7 +259,7 @@ def astar(
             for child in children:
 
                 child.g = curr_state.g + 4
-                child.h = heur(child, target)
+                child.h = heuristic(child, target)
                 child.f = child.g + child.h
 
                 if child not in explored:
