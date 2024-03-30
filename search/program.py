@@ -45,11 +45,8 @@ class State():
                  board: dict[Coord, PlayerColor]=None, 
                  piece: PlaceAction=None):
         self.parent = parent        # parent node
-        all_coords = []
-        for tup in board.items():
-            all_coords.append(tup)
-        self.board = tuple(all_coords)      # a tuple of tuples 
-        self.piece = piece          # a placeAction i.e. the piece added to parent 
+        self.board = board          # dict with key = Coord, val = colour
+        self.piece = piece          # a placeAction i.e. the piece added to parent
 
         self.g = 0
         self.h = 0
@@ -62,20 +59,14 @@ class State():
         return f"f={self.f}"
 
     def __hash__(self) -> int:
-        return hash(self.board)
+        all_coords = []
+        for tup in self.board.items():
+            all_coords.append(tup)
+
+        return hash(tuple(sorted(all_coords)))
     
     def __gt__(self, other: 'State'):
-        return self.f > other.f
-
-    def dict_board(self) -> dict[Coord, PlayerColor]:
-        '''
-        Converts the board (tuple of tuples) into dictionary
-        [For testing Purposes i.e. rendering board]
-        '''
-        board_dict = {}
-        for tup in self.board:
-            board_dict[tup[0]] = tup[1]
-        return board_dict
+        return (self.f > other.f)
 
     def test_gen_children(self, target) -> list['State']:
         children = []
@@ -101,9 +92,9 @@ class State():
                 new_board = dict(self.board)
                 for new_coord in new_piece_coords:
                     new_board[new_coord] = PlayerColor.RED
-                new_piece = PlaceAction(new_piece_coords)
+                new_piece = PlaceAction(*new_piece_coords)
                 new_state = State(self, new_board, new_piece)
-                new_state = line_removal(new_state)
+                new_state = line_removal(new_state, target)
 
                 children.append(new_state)
 
@@ -141,66 +132,64 @@ class State():
     def generate_children(self, target) -> list['State']:
         children = set()
 
-        # Iterate over all red cells on the board
-        for square in self.board:
-            # print(f"coord, color: {coord}, {color}")
-            if square[1] == PlayerColor.BLUE:
-                continue
+         # Iterate over all red cells on the board
+        for coord, color in self.board.items():
+            if color == PlayerColor.RED:
 
-            # STEP 1
-            onecell = []
-            adjacent_coords = adjacent(square[0])
-            for adjacent_coord in adjacent_coords:
-                if any(adjacent_coord in i for i in self.board):
-                    continue
-                onecell.append([adjacent_coord])
+                # STEP 1
+                onecell = []
+                adjacent_coords = [coord.down(), coord.up(), coord.left(), coord.right()]
+                for adjacent_coord in adjacent_coords:
+                    if adjacent_coord in self.board.keys():
+                        continue
+                    onecell.append([adjacent_coord])
 
-            # STEP 2
-            twocell = []
-            for one in onecell:
-                # print(f" for {one} in onecell:")
-                if one:
-                    for last in one:
-                        adjacent_coords = adjacent(last)
-                        for adjacent_coord in adjacent_coords:
-                            if any(adjacent_coord in i for i in self.board):
-                                continue
-                            twocell.append(one + [adjacent_coord])
+                # STEP 2
+                twocell = []
+                for one in onecell:
+                    if one:
+                        for last in one:
+                            adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
+                            for adjacent_coord in adjacent_coords:
+                                if adjacent_coord in self.board.keys():
+                                    continue
+                                twocell.append(one + [adjacent_coord])
 
-            # STEP 3
-            threecell = []
-            for two in twocell:
-                if two:
-                    for last in two:
-                        adjacent_coords = adjacent(last)
-                        for adjacent_coord in adjacent_coords:
-                            if any(adjacent_coord in i for i in self.board) or (adjacent_coord in two):
-                                continue
-                            threecell.append(two + [adjacent_coord])
+                # STEP 3
+                threecell = []
+                for two in twocell:
+                    if two:
+                        for last in two:
+                            adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
+                            for adjacent_coord in adjacent_coords:
+                                if adjacent_coord in self.board.keys() or adjacent_coord in two:
+                                    continue
+                                threecell.append(two + [adjacent_coord])
 
-            # STEP 4
-            fourcell = []
-            for three in threecell:
-                if three:
-                    for last in three:
-                        adjacent_coords = adjacent(last)
-                        for adjacent_coord in adjacent_coords:
-                            if any(adjacent_coord in i for i in self.board) or (adjacent_coord in three):
-                                continue
-                            fourcell.append(three + [adjacent_coord])
 
-            for new_piece_coords in fourcell:
-                # create new board
-                new_board = self.dict_board()
-                for new_coord in new_piece_coords:
-                    new_board[new_coord] = PlayerColor.RED
-                new_piece = PlaceAction(*new_piece_coords)
-                new_state = State(self, new_board, new_piece)
-                new_state = line_removal(new_state)
+                # STEP 4
+                fourcell = []
+                for three in threecell:
+                    if three:
+                        for last in three:
+                            adjacent_coords = [last.down(), last.up(), last.left(), last.right()]
+                            for adjacent_coord in adjacent_coords:
+                                if adjacent_coord in self.board.keys() or adjacent_coord in three:
+                                    continue
+                                fourcell.append(three + [adjacent_coord])
 
-                children.add(new_state)
+                for new_piece_coords in sorted(fourcell):
+                    # create new board
+                    new_board = dict(self.board)
+                    for new_coord in sorted(new_piece_coords):
+                        new_board[new_coord] = PlayerColor.RED
+                    new_piece = PlaceAction(*new_piece_coords)
+                    new_state = State(self, new_board, new_piece)
+                    new_state = line_removal(new_state, target)
 
-        return children
+                    children.add(new_state)
+
+        return sorted(children)
     
 def adjacent(coord: Coord):
     '''
@@ -222,16 +211,16 @@ def heur(state: State, target) -> int:
     nearest_row = 11
     nearest_col = 11
 
-    if not any(target in i for i in state.board):
+    if target not in state.board.keys():
         return 0
 
-    for coord, colour in state.board:
+    for coord in state.board:
         if coord.r == target.r:
             row_counter += 1
         if coord.c == target.c:
             col_counter += 1
 
-        if colour == PlayerColor.RED:
+        if state.board[coord] == PlayerColor.RED:
             rdiff = min(abs(coord.r - target.r), 11 - abs(coord.r - target.r))
             cdiff = min(abs(coord.c - target.c), 11 - abs(coord.c - target.c))
             
@@ -241,16 +230,12 @@ def heur(state: State, target) -> int:
             if cdiff < nearest_col:
                 nearest_col = cdiff
 
-    # print(f"nearest_row: {nearest_row}")
-    # print(f"nearest_col: {nearest_col}")
-
     heur = min(nearest_row + (11 - row_counter), nearest_col + (11 - col_counter))
-    # print(f"heur = {heur}")
             
     return heur
 
 
-def line_removal(state: State) -> State:
+def line_removal(state: State, target) -> State:
     '''
     Checks if any rows are columns are completely filled with blocks
     If there is, remove them from board
@@ -258,6 +243,7 @@ def line_removal(state: State) -> State:
 
     [Completed & Tested]
     '''
+    new_state = State(state.parent, {}, state.piece)
     del_row = []
     del_col = []
 
@@ -266,10 +252,10 @@ def line_removal(state: State) -> State:
         # simultaneously check row i and col i to see if they are filled 
         row_counter = 0
         col_counter = 0
-        for square in state.board:
-            if square[0].r == i:
+        for coord in state.board:
+            if coord.r == i:
                 row_counter += 1
-            if square[0].c == i:
+            if coord.c == i:
                 col_counter += 1
         if (row_counter >= 11):
             del_row.append(i)
@@ -277,11 +263,9 @@ def line_removal(state: State) -> State:
             del_col.append(i)
     
     # remove specified rows and cols if any
-    new_board = {}
-    for square in state.board:
-        if (square[0].r not in del_row) and (square[0].c not in del_col):
-            new_board[square[0]] = square[1]
-    new_state = State(state.parent, new_board, state.piece)
+    for key in state.board.keys():
+        if (key.r not in del_row) and (key.c not in del_col):
+            new_state.board[key] = state.board[key]
 
     return new_state
         
@@ -290,36 +274,23 @@ def astar(board, target):
     start_time = time.time()
     # get starting nodes
     start_state = State(None, board)
-    print(render_board(start_state.dict_board(), target, ansi=True))
 
     # lists of states
-    open = pq()         # stores a list of state
-    closed = set()         # only stores states
+    frontier = pq()         # stores a list of state
+    explored = set()         # only stores states
 
-    open.put(start_state)
+    frontier.put(start_state)
 
 
     # loop until reaching goal state
-    while open.qsize() > 0:
-        
+    while frontier.qsize() > 0:
         # get curr state  (i.e. state with highest priority)
-        curr_state = open.get()
+        curr_state = frontier.get()
         # print(render_board(curr_state.dict_board(), target, ansi=True))
-
         # check if target is removed
         # TODO: refine expression to check if target is removed
-        if target not in (tup[0] for tup in curr_state.board):
-            print(f"FINAL ANSWER: child.f = {curr_state.f}, child.g = {curr_state.g}, child.h = {curr_state.h}")
-            path = []
-            current = curr_state
-            while current is not None:
-                if current.piece:
-                    path.append(current.piece)
-                current = current.parent
-            print("total runtime in secs:", time.time() - start_time)
-            return path[::-1]
         
-        if curr_state not in closed:
+        if curr_state not in explored:
 
             # generate children as states
             children = curr_state.generate_children(target)
@@ -327,32 +298,22 @@ def astar(board, target):
             # loop through children
             for child in children:
 
-                print(render_board(child.dict_board(), target, ansi=True))
+                if target not in child.board.keys():
+                    path = []
+                    current = child
+                    while current is not None:
+                        if current.piece:
+                            path.append(current.piece)
+                        current = current.parent
+                    print("total runtime in secs:", time.time() - start_time)
+                    return path[::-1]
 
                 # otherwise create child
                 child.g = curr_state.g + 4
                 child.h = heur(child, target)
-                # TODO: h(x) = manhattan_dist to row/col + number of square left to fill in row/col     
                 child.f = child.g + child.h
-                print(f"child.f = {child.f}, child.g = {child.g}, child.h = {child.h}")
 
-                # # check if the child state is already in the queue
-                # for open_node in open.queue:
-                #     # open_node is a state
-                #     if child.board == open_node.board and child.g >= open_node.g:
-                #         continue
-                if child not in closed:
-                    open.put(child)
+                if child not in explored:
+                    frontier.put(child)
 
-        closed.add(curr_state)
-
-            # better = True
-            # for open_node in open.queue:
-            #     if child == open_node[1] and child.g > open_node[1].g:
-            #         better = False
-            #         continue
-
-            # # if child state is already in the queue and has lower g(x), don't add child to queue
-            # if better:
-            #     open.put((child.f, child))
-
+        explored.add(curr_state)
