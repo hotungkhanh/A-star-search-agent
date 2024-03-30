@@ -3,7 +3,6 @@
 
 from .core import PlayerColor, Coord, PlaceAction
 from .utils import render_board
-from collections import defaultdict as dd
 from queue import PriorityQueue as pq
 import time
 
@@ -48,6 +47,8 @@ class State():
         all_coords = []
         for tup in board.items():
             all_coords.append(tup)
+        all_coords.sort()
+        # print(all_coords)
         self.board = tuple(all_coords)      # a tuple of tuples 
         self.piece = piece          # a placeAction i.e. the piece added to parent 
 
@@ -65,13 +66,13 @@ class State():
         return hash(self.board)
     
     def __gt__(self, other: 'State'):
-        return self.f > other.f
+        return (self.f, self.__hash__()) > (other.f, self.__hash__())
 
     def dict_board(self) -> dict[Coord, PlayerColor]:
         '''
         Converts the board (tuple of tuples) into dictionary
-        [For testing Purposes i.e. rendering board]
         '''
+
         board_dict = {}
         for tup in self.board:
             board_dict[tup[0]] = tup[1]
@@ -288,8 +289,18 @@ def line_removal(state: State) -> State:
 
 def astar(board, target):
     start_time = time.time()
+    test = True         # tests the check for whether child appears in open
     # get starting nodes
     start_state = State(None, board)
+
+    # testing zone -----------------
+    test1 = State(None, board)
+    test2 = State(None, board)
+    print()
+    print(test1 == test2)
+
+    # ------------------------------
+
     print(render_board(start_state.dict_board(), target, ansi=True))
 
     # lists of states
@@ -301,23 +312,10 @@ def astar(board, target):
 
     # loop until reaching goal state
     while open.qsize() > 0:
-        
         # get curr state  (i.e. state with highest priority)
         curr_state = open.get()
-        # print(render_board(curr_state.dict_board(), target, ansi=True))
-
-        # check if target is removed
-        # TODO: refine expression to check if target is removed
-        if target not in (tup[0] for tup in curr_state.board):
-            print(f"FINAL ANSWER: child.f = {curr_state.f}, child.g = {curr_state.g}, child.h = {curr_state.h}")
-            path = []
-            current = curr_state
-            while current is not None:
-                if current.piece:
-                    path.append(current.piece)
-                current = current.parent
-            print("total runtime in secs:", time.time() - start_time)
-            return path[::-1]
+        print("poped:")
+        print(render_board(curr_state.dict_board(), target, ansi=True))
         
         if curr_state not in closed:
 
@@ -327,32 +325,30 @@ def astar(board, target):
             # loop through children
             for child in children:
 
-                print(render_board(child.dict_board(), target, ansi=True))
+                # print(render_board(child.dict_board(), target, ansi=True))
 
-                # otherwise create child
                 child.g = curr_state.g + 4
-                child.h = heur(child, target)
-                # TODO: h(x) = manhattan_dist to row/col + number of square left to fill in row/col     
+                # child.h = heur(child, target)
                 child.f = child.g + child.h
-                print(f"child.f = {child.f}, child.g = {child.g}, child.h = {child.h}")
+                # print(f"child.f = {child.f}, child.g = {child.g}, child.h = {child.h}")
 
-                # # check if the child state is already in the queue
-                # for open_node in open.queue:
-                #     # open_node is a state
-                #     if child.board == open_node.board and child.g >= open_node.g:
-                #         continue
-                if child not in closed:
+                if target not in (tup[0] for tup in child.board):
+                    print(f"FINAL ANSWER: child.f = {child.f}, child.g = {child.g}, child.h = {child.h}")
+                    path = []
+                    current = child
+                    while current is not None:
+                        if current.piece:
+                            path.append(current.piece)
+                        current = current.parent
+                    print(test)
+                    print("total runtime in secs:", time.time() - start_time)
+                    return path[::-1]
+
+                if (child not in closed):
                     open.put(child)
+                    print("child:")
+                    print(render_board(child.dict_board(), target, ansi=True))
 
         closed.add(curr_state)
 
-            # better = True
-            # for open_node in open.queue:
-            #     if child == open_node[1] and child.g > open_node[1].g:
-            #         better = False
-            #         continue
-
-            # # if child state is already in the queue and has lower g(x), don't add child to queue
-            # if better:
-            #     open.put((child.f, child))
-
+    print(test)

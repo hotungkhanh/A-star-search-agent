@@ -37,6 +37,10 @@ print(hash(d2))
 
 print("\nTuple of (Coord, Colour) Hash")
 e1 = (d1, d2, d3)
+e2 = (d2, d1, d3)
 print(e1)
-print(hash(e1))
+print(hash(e1) == hash(e2))
 # Tuple of Tuples is hashable
+
+t1 = (3, 2)
+print()
