@@ -44,3 +44,9 @@ print(hash(e1) == hash(e2))
 
 t1 = (3, 2)
 print()
+
+
+tt1 = ((3, 2), (1, 2))
+
+for one, two in tt1:
+    print(one)
