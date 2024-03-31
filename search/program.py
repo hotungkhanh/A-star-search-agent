@@ -228,7 +228,6 @@ def astar(
     # get starting nodes
     start_state = State(None, board)
 
-    # lists of states
     frontier = pq()         # stores a list of state
     explored = set()         # only stores states
 
@@ -237,7 +236,7 @@ def astar(
     # loop until reaching goal state
     while frontier.qsize() > 0:
 
-        # get curr state  (i.e. state with highest priority)
+        # get the next state for expansion (i.e. state with highest priority)
         curr_state = frontier.get()
         
         if curr_state not in explored:
