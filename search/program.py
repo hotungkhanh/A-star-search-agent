@@ -245,6 +245,11 @@ def astar(
     # create the starting State
     start_state = State(None, board)
 
+    # check whether the starting board is the goal state
+    start_state = line_removal(start_state)
+    if target not in start_state.board.keys():
+        return
+
     frontier = pq()         # a priority queue of States
     explored = set()        # a set of explored States
 
