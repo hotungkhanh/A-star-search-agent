@@ -250,7 +250,7 @@ def astar(
     if target not in start_state.board.keys():
         return
 
-    frontier = pq()         # a priority queue of States
+    frontier = pq()         # a priority queue of unexplored States
     explored = set()        # a set of explored States
 
     frontier.put(start_state)
