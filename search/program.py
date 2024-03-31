@@ -46,9 +46,10 @@ class State():
     def __init__(self, parent=None, 
                  board: dict[Coord, PlayerColor]=None, 
                  piece: PlaceAction=None):
-        self.parent = parent        # parent node
-        self.board = board          # dict with key = Coord, val = colour
-        self.piece = piece          # a placeAction i.e. the piece added to parent
+        self.parent = parent        # parent State
+        self.board = board          # a dictionary representing current board
+        self.piece = piece          # the PlaceAction used to achieve this
+                                    # State from the parent 
         
         self.hashvalue = self.__hash__()
         self.g = 0
@@ -63,8 +64,10 @@ class State():
 
     def __hash__(self) -> int:
         all_coords = []
+
+        # convert current board dictionary into a 2D tuple for hashing
         for tup in self.board.items():
-            all_coords.append((tup))
+            all_coords.append(tup)
 
         return hash(tuple(all_coords))
     
@@ -101,8 +104,10 @@ class State():
                 piece_combinations.add(tuple(sorted(current_piece)))
             else:
                 for adjacent_coord in adjacent(current_coord):
-                    if adjacent_coord not in self.board and adjacent_coord not in current_piece:
-                        stack.append((adjacent_coord, current_piece + [adjacent_coord]))
+                    if (adjacent_coord not in self.board) and (adjacent_coord 
+                                                               not in current_piece):
+                        stack.append((adjacent_coord, current_piece + 
+                                      [adjacent_coord]))
 
         return piece_combinations
     
@@ -113,12 +118,13 @@ def adjacent(
     Computes all 4 possible adjacent coordinates
 
     Parameters:
-        `coord`: a `Coord` instance that represents a coordinate that we want
+        `coord`: a `Coord` instance that represents the coordinate that we want
         to find adjacent coordinates for
 
     Returns:
         An array of adjacent coordinates on the board
     """
+
     return [coord.down(), coord.up(), coord.left(), coord.right()]
 
 
@@ -147,12 +153,17 @@ def heuristic(
         return 0
 
     for coord in state.board:
+
+        # count how many squares in the row & column of the target are filled
         if coord.r == target.r:
             row_counter += 1
         if coord.c == target.c:
             col_counter += 1
 
+        # find overall minimum manhatten distance from the RED coordinates
+        # to the row and column that needs to be filled to remove target
         if state.board[coord] == PlayerColor.RED:
+        
             rdiff = min(abs(coord.r - target.r), 11 - abs(coord.r - target.r))
             cdiff = min(abs(coord.c - target.c), 11 - abs(coord.c - target.c))
             
@@ -162,7 +173,8 @@ def heuristic(
             if cdiff < nearest_col:
                 nearest_col = cdiff
 
-    heur_value = min(nearest_row + (11 - row_counter), nearest_col + (11 - col_counter))
+    heur_value = min(nearest_row + (11 - row_counter), nearest_col + 
+                     (11 - col_counter))
             
     return heur_value
 
@@ -171,20 +183,23 @@ def line_removal(
         state: State
 ) -> State:
     """
-    Takes a State as input
-
     Removes any rows or columns that are completely filled with blocks
     i.e. performs the line removal mechanic
 
-    Returns a new State with the appropriate rows or columns removed
+    Parameters:
+        `state`: a State instance that we want to check line removal for
+    
+    Returns:
+    A new State with the appropriate rows or columns removed
     """
 
     new_state = State(state.parent, {}, state.piece)
     del_row = []
     del_col = []
 
-    # locate rows and cols to remove
+    # locate rows and columns to remove
     for i in range(11):
+
         # simultaneously check row i and col i to see if they are filled 
         row_counter = 0
         col_counter = 0
@@ -198,7 +213,7 @@ def line_removal(
         if (col_counter >= 11):
             del_col.append(i)
     
-    # remove specified rows and cols if any
+    # create a new State with the appropriate rows or columns removed
     for key in state.board.keys():
         if key.r not in del_row and key.c not in del_col:
             new_state.board[key] = state.board[key]
@@ -211,7 +226,7 @@ def astar(
         target: Coord
 ):
     """
-    Uses a modified version of A* pathfinding to solve the game
+    A modified version of A* pathfinding used to solve the game
     Goal: remove the target Coord from the board
 
     Parameters:
@@ -225,22 +240,24 @@ def astar(
     """
 
     start_time = time.time()
-    # get starting nodes
+
+    # create the starting State
     start_state = State(None, board)
 
-    frontier = pq()         # stores a list of state
-    explored = set()         # only stores states
+    frontier = pq()         # a priority queue of States
+    explored = set()        # a set of explored States
 
     frontier.put(start_state)
 
     # loop until reaching goal state
     while frontier.qsize() > 0:
 
-        # get the next state for expansion (i.e. state with highest priority)
+        # get the next State for expansion (i.e. state with highest priority)
         curr_state = frontier.get()
         
         if curr_state not in explored:
 
+            # check if goal state has been reached
             if target not in curr_state.board.keys():
                     path = []
                     current = curr_state
@@ -251,10 +268,10 @@ def astar(
                     print("Runtime:", time.time() - start_time)
                     return path[::-1]
 
-            # generate children as states
+            # generate children States of the current State
             children = curr_state.generate_children(target)
 
-            # loop through children
+            # loop through children and calculate f(x) = g(x) + h(x)
             for child in children:
 
                 child.g = curr_state.g + 4
@@ -264,6 +281,7 @@ def astar(
                 if child not in explored:
                     frontier.put(child)
 
+        # mark current state as explored
         explored.add(curr_state)
         
     return
