@@ -48,8 +48,8 @@ class State():
                  piece: PlaceAction=None):
         self.parent = parent        # parent State
         self.board = board          # a dictionary representing current board
-        self.piece = piece          # the PlaceAction used to achieve this
-                                    # State from the parent 
+        self.piece = piece          # the PlaceAction added to the parent State
+                                        # to create this current State
         
         self.hashvalue = self.__hash__()
         self.g = 0
@@ -65,7 +65,7 @@ class State():
     def __hash__(self) -> int:
         all_coords = []
 
-        # convert current board dictionary into a 2D tuple for hashing
+        # convert board dictionary into a 2D tuple for hashing
         for tup in self.board.items():
             all_coords.append(tup)
 
@@ -95,6 +95,7 @@ class State():
         """
         Generate all possible piece combinations touching a given coordinate.
         """
+
         piece_combinations = set()
         stack = [(touched_coord, [])]
 
@@ -104,8 +105,8 @@ class State():
                 piece_combinations.add(tuple(sorted(current_piece)))
             else:
                 for adjacent_coord in adjacent(current_coord):
-                    if (adjacent_coord not in self.board) and (adjacent_coord 
-                                                               not in current_piece):
+                    if ((adjacent_coord not in self.board) and 
+                        (adjacent_coord not in current_piece)):
                         stack.append((adjacent_coord, current_piece + 
                                       [adjacent_coord]))
 
