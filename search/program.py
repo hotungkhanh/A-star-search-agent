@@ -1,12 +1,10 @@
 # COMP30024 Artificial Intelligence, Semester 1 2024
 # Project Part A: Single Player Tetress
 
-from .core import PlayerColor, Coord, PlaceAction
+from .core import PlayerColor, Coord, PlaceAction, BOARD_N
 from .utils import render_board
 from queue import PriorityQueue as pq
 import time
-
-# MAGIC NUMBER 11
 
 def search(
     board: dict[Coord, PlayerColor], 
@@ -52,9 +50,9 @@ class State():
                                         # to create this current State
         
         self.hashvalue = self.__hash__()
-        self.g = 0
-        self.h = 0
-        self.f = 0
+        self.g_n = 0                # cost so far to reach n (path cost)
+        self.h_n = 0                # estimated cost to goal from n
+        self.f_n = 0                # estimated total cost of path through n to goal
 
     def __eq__(self, other: 'State'):
         return self.hashvalue == other.hashvalue
@@ -72,9 +70,9 @@ class State():
         return hash(tuple(all_coords))
     
     def __gt__(self, other: 'State'):
-        return (self.f > other.f)
+        return (self.f_n > other.f_n)
     
-    def generate_children(self, target) -> list['State']:
+    def generate_children(self) -> list['State']:
         children = []
 
         for coord, color in self.board.items():
@@ -134,28 +132,28 @@ def heuristic(
         target
 ) -> int:
     """
-    Computes the heuristic function h(x) used for A* pathfinding
+    Computes the heuristic function h(n) used for A* pathfinding
 
     Parameters:
         `state`: a `State` instance that represents the given board state
         `target`: the target BLUE coordinate to remove from the board
 
     Returns:
-        The integer value of h(x)
+        The integer value of h(n)
     """
 
     row_counter = 0
     col_counter = 0
 
-    nearest_row = 11
-    nearest_col = 11
+    nearest_row = BOARD_N
+    nearest_col = BOARD_N
 
     if target not in state.board.keys():
         return 0
 
     for coord in state.board:
 
-        # count how many squares in the row & column of the target are filled
+        # count how many tokens in the row & column of the target are filled
         if coord.r == target.r:
             row_counter += 1
         if coord.c == target.c:
@@ -165,8 +163,8 @@ def heuristic(
         # to the row and column that needs to be filled to remove target
         if state.board[coord] == PlayerColor.RED:
         
-            rdiff = min(abs(coord.r - target.r), 11 - abs(coord.r - target.r))
-            cdiff = min(abs(coord.c - target.c), 11 - abs(coord.c - target.c))
+            rdiff = min(abs(coord.r - target.r), BOARD_N - abs(coord.r - target.r))
+            cdiff = min(abs(coord.c - target.c), BOARD_N - abs(coord.c - target.c))
             
             if rdiff < nearest_row:
                 nearest_row = rdiff
@@ -174,10 +172,10 @@ def heuristic(
             if cdiff < nearest_col:
                 nearest_col = cdiff
 
-    heur_value = min(nearest_row + (11 - row_counter), nearest_col + 
-                     (11 - col_counter))
+    h_n = min(nearest_row + (BOARD_N - row_counter), nearest_col + 
+                     (BOARD_N - col_counter))
             
-    return heur_value
+    return h_n
 
 
 def line_removal(
@@ -199,7 +197,7 @@ def line_removal(
     del_col = []
 
     # locate rows and columns to remove
-    for i in range(11):
+    for i in range(BOARD_N):
 
         # simultaneously check row i and col i to see if they are filled 
         row_counter = 0
@@ -209,9 +207,9 @@ def line_removal(
                 row_counter += 1
             if coord.c == i:
                 col_counter += 1
-        if (row_counter >= 11):
+        if (row_counter >= BOARD_N):
             del_row.append(i)
-        if (col_counter >= 11):
+        if (col_counter >= BOARD_N):
             del_col.append(i)
     
     # create a new State with the appropriate rows or columns removed
@@ -275,14 +273,14 @@ def astar(
                     return path[::-1]
 
             # generate children States of the current State
-            children = curr_state.generate_children(target)
+            children = curr_state.generate_children()
 
-            # loop through children and calculate f(x) = g(x) + h(x)
+            # loop through children and calculate f(n) = g(n) + h(n)
             for child in children:
 
-                child.g = curr_state.g + 4
-                child.h = heuristic(child, target)
-                child.f = child.g + child.h
+                child.g_n = curr_state.g_n + 4
+                child.h_n = heuristic(child, target)
+                child.f_n = child.g_n + child.h_n
 
                 if child not in explored:
                     frontier.put(child)
