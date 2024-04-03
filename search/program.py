@@ -56,10 +56,10 @@ class State():
         self.f_n = 0                # estimated total cost of path through n to goal
 
     def __eq__(self, other: 'State'):
-        return self.__hash__() == other.__hash__()
+        return self.hashable_value() == other.hashable_value()
 
-    def __hash__(self) -> int:
-        return hash(frozenset(self.board.items()))
+    def hashable_value(self):
+        return frozenset(self.board.items())
     
     def __gt__(self, other: 'State'):
         return (self.f_n > other.f_n)
@@ -251,7 +251,7 @@ def astar(
         # get the next State for expansion (i.e. state with highest priority)
         curr_state = frontier.get()
         
-        if curr_state.__hash__() not in explored:
+        if curr_state.hashable_value() not in explored:
 
             # check if goal state has been reached
             if target not in curr_state.board.keys():
@@ -274,10 +274,10 @@ def astar(
                 child.h_n = heuristic(child, target)
                 child.f_n = child.g_n + child.h_n
 
-                if child.__hash__() not in explored:
+                if child.hashable_value() not in explored:
                     frontier.put(child)
 
         # mark current state as explored
-        explored.add(curr_state.__hash__())
+        explored.add(curr_state.hashable_value())
         
     return
