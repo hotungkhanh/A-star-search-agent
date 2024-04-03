@@ -6,6 +6,8 @@ from .utils import render_board
 from queue import PriorityQueue as pq
 import time
 
+PIECE_N = 4
+
 def search(
     board: dict[Coord, PlayerColor], 
     target: Coord
@@ -99,7 +101,7 @@ class State():
 
         while stack:
             current_coord, current_piece = stack.pop()
-            if len(current_piece) == 4:
+            if len(current_piece) == PIECE_N:
                 piece_combinations.add(tuple(sorted(current_piece)))
             else:
                 for adjacent_coord in adjacent(current_coord):
@@ -278,7 +280,7 @@ def astar(
             # loop through children and calculate f(n) = g(n) + h(n)
             for child in children:
 
-                child.g_n = curr_state.g_n + 4
+                child.g_n = curr_state.g_n + PIECE_N
                 child.h_n = heuristic(child, target)
                 child.f_n = child.g_n + child.h_n
 
