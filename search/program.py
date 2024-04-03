@@ -51,16 +51,12 @@ class State():
         self.piece = piece          # the PlaceAction added to the parent State
                                         # to create this current State
         
-        self.hashvalue = self.__hash__()
         self.g_n = 0                # cost so far to reach n (path cost)
         self.h_n = 0                # estimated cost to goal from n
         self.f_n = 0                # estimated total cost of path through n to goal
 
     def __eq__(self, other: 'State'):
-        return self.hashvalue == other.hashvalue
-    
-    def __str__(self) -> str:
-        return f"f={self.hashvalue}"
+        return self.self.__hash__() == other.self.__hash__()
 
     def __hash__(self) -> int:
         all_coords = []
