@@ -56,7 +56,7 @@ class State():
         self.f_n = 0                # estimated total cost of path through n to goal
 
     def __eq__(self, other: 'State'):
-        return self.self.__hash__() == other.self.__hash__()
+        return self.__hash__() == other.__hash__()
 
     def __hash__(self) -> int:
         all_coords = []
