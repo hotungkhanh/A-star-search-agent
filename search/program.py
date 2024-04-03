@@ -59,13 +59,7 @@ class State():
         return self.__hash__() == other.__hash__()
 
     def __hash__(self) -> int:
-        all_coords = []
-
-        # convert board dictionary into a 2D tuple for hashing
-        for tup in self.board.items():
-            all_coords.append(tup)
-
-        return hash(tuple(all_coords))
+        return hash(frozenset(self.board.items()))
     
     def __gt__(self, other: 'State'):
         return (self.f_n > other.f_n)
