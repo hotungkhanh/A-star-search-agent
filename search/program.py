@@ -33,7 +33,6 @@ def search(
     # codes, set the `ansi` flag to True to print a colour-coded version!
     print(render_board(board, target, ansi=True))
 
-    # Do some impressive AI stuff here to find the solution...
     return astar(board, target)
 
 class State():
@@ -151,8 +150,8 @@ def heuristic(
         if coord.c == target.c:
             col_counter += 1
 
-        # find overall minimum manhatten distance from the RED coordinates
-        # to the row and column that needs to be filled to remove target
+        # find the nearest distance from the RED coordinates
+        # to the row and column of the target
         if state.board[coord] == PlayerColor.RED:
         
             rdiff = min(abs(coord.r - target.r), BOARD_N - abs(coord.r - target.r))
@@ -164,8 +163,8 @@ def heuristic(
             if cdiff < nearest_col:
                 nearest_col = cdiff
 
-    h_n = min(nearest_row + (BOARD_N - row_counter), nearest_col + 
-                     (BOARD_N - col_counter))
+    h_n = min(nearest_row + (BOARD_N - row_counter),
+              nearest_col + (BOARD_N - col_counter))
             
     return h_n
 
@@ -204,7 +203,7 @@ def line_removal(
         if (col_counter >= BOARD_N):
             del_col.append(i)
     
-    # create a new State with the appropriate rows or columns removed
+    # create a new State with the previously filled rows or columns removed
     for key in state.board.keys():
         if key.r not in del_row and key.c not in del_col:
             new_state.board[key] = state.board[key]
