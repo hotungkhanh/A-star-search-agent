@@ -98,6 +98,9 @@ class State():
                         (adjacent_coord not in current_piece)):
                         stack.append((adjacent_coord, current_piece + 
                                       [adjacent_coord]))
+                        for coord in current_piece:
+                            stack.append((coord, current_piece + 
+                                      [adjacent_coord]))
 
         return piece_combinations
     
